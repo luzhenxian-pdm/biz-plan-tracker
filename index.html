@@ -303,10 +303,10 @@
   </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-const _fbApp = initializeApp({
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+<script>
+firebase.initializeApp({
   apiKey: "AIzaSyAHHmlv66TkU9e-6KSBjgi4-Jymn-O6wPU",
   authDomain: "member-manager-4d949.firebaseapp.com",
   databaseURL: "https://member-manager-4d949-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -315,8 +315,7 @@ const _fbApp = initializeApp({
   messagingSenderId: "830753379430",
   appId: "1:830753379430:web:36977f4ae84bddad1f89a7"
 });
-const _db = getDatabase(_fbApp);
-const _dbRef = ref(_db, "biz_plan");
+const _dbRef = firebase.database().ref("biz_plan");
 
 const PRODUCTS = [
   { id: "chargeback", name: "チャージバック",        owner: "富岡",        priority: "high" },
@@ -639,7 +638,7 @@ function escHtml(s) {
 }
 
 // Firebase: リアルタイムDB同期
-onValue(_dbRef, (snapshot) => {
+_dbRef.on("value", (snapshot) => {
   const val = snapshot.val();
   if (!val) { renderSummary(); return; }
   if (val.products) {
@@ -655,24 +654,13 @@ onValue(_dbRef, (snapshot) => {
 });
 
 function saveData() {
-  set(_dbRef, {
+  _dbRef.set({
     products: PRODUCTS,
     data: data,
     updated: new Date().toLocaleString("ja-JP")
   });
 }
 
-// グローバル公開（onclick属性から呼ぶため）
-window.showDetail        = showDetail;
-window.showSummary       = showSummary;
-window.addReviewEntry    = addReviewEntry;
-window.deleteReviewEntry = deleteReviewEntry;
-window.updateCardStyle   = updateCardStyle;
-window.saveDetail        = saveDetail;
-window.openModal         = openModal;
-window.closeModal        = closeModal;
-window.closeModalOutside = closeModalOutside;
-window.addProduct        = addProduct;
 
 renderSummary();
 </script>
