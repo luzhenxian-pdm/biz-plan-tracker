@@ -304,6 +304,20 @@
 </div>
 
 <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+const _fbApp = initializeApp({
+  apiKey: "AIzaSyAHHmlv66TkU9e-6KSBjgi4-Jymn-O6wPU",
+  authDomain: "member-manager-4d949.firebaseapp.com",
+  databaseURL: "https://member-manager-4d949-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "member-manager-4d949",
+  storageBucket: "member-manager-4d949.firebasestorage.app",
+  messagingSenderId: "830753379430",
+  appId: "1:830753379430:web:36977f4ae84bddad1f89a7"
+});
+const _db = getDatabase(_fbApp);
+const _dbRef = ref(_db, "biz_plan");
+
 const PRODUCTS = [
   { id: "chargeback", name: "チャージバック",        owner: "富岡",        priority: "high" },
   { id: "direct",     name: "ダイレクト決済",       owner: "陸",         priority: "high" },
@@ -344,10 +358,6 @@ function loadData() {
   try { return JSON.parse(raw); } catch { return defaultData(); }
 }
 
-function saveData(d) {
-  localStorage.setItem("biz_plan_v2", JSON.stringify(d));
-  localStorage.setItem("biz_plan_updated", new Date().toLocaleString("ja-JP"));
-}
 
 // 保存済みPRODUCTSがあれば復元（担当・優先度・追加プロダクト）
 (function() {
@@ -628,29 +638,10 @@ function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
-// ── Firebase Realtime Database ──────────────────────────────
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAHHmlv66TkU9e-6KSBjgi4-Jymn-O6wPU",
-  authDomain: "member-manager-4d949.firebaseapp.com",
-  databaseURL: "https://member-manager-4d949-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "member-manager-4d949",
-  storageBucket: "member-manager-4d949.firebasestorage.app",
-  messagingSenderId: "830753379430",
-  appId: "1:830753379430:web:36977f4ae84bddad1f89a7"
-};
-
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
-const dbRef = ref(db, "biz_plan");
-
-// DBからデータをリアルタイムで受信
-onValue(dbRef, (snapshot) => {
+// Firebase: リアルタイムDB同期
+onValue(_dbRef, (snapshot) => {
   const val = snapshot.val();
-  if (!val) return;
-  // productsの復元
+  if (!val) { renderSummary(); return; }
   if (val.products) {
     val.products.forEach(sp => {
       const idx = PRODUCTS.findIndex(p => p.id === sp.id);
@@ -658,27 +649,18 @@ onValue(dbRef, (snapshot) => {
       else PRODUCTS.push(sp);
     });
   }
-  if (val.data) {
-    Object.assign(data, val.data);
-  }
+  if (val.data) Object.assign(data, val.data);
   renderSummary();
   if (currentProduct) renderReviewLog(data[currentProduct.id]?.reviews || []);
 });
 
-// saveDataをFirebaseに書き込むよう上書き
-function saveToFirebase() {
-  set(dbRef, {
+function saveData() {
+  set(_dbRef, {
     products: PRODUCTS,
     data: data,
     updated: new Date().toLocaleString("ja-JP")
   });
 }
-
-// 既存のsaveData/localStorage呼び出しをFirebaseに差し替え
-const _origSaveData = saveData;
-window.saveData = function(d) {
-  saveToFirebase();
-};
 
 // グローバル公開（onclick属性から呼ぶため）
 window.showDetail        = showDetail;
