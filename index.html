@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>事業計画 進捗管理</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', 'Hiragino Sans', sans-serif; background: #f0f4f8; color: #1a202c; }
+
+  .header {
+    background: linear-gradient(135deg, #1a365d 0%, #2d4a7a 100%);
+    color: white;
+    padding: 20px 36px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  }
+  .header .h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .header .subtitle { font-size: 11px; opacity: 0.55; margin-top: 3px; letter-spacing: 0.04em; }
+
+  .main { padding: 28px 32px; }
+
+  .stats { display: flex; gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: white; border-radius: 8px; padding: 14px 20px; flex: 1; border-left: 4px solid; }
+  .stat-card.total      { border-color: #1a365d; }
+  .stat-card.done       { border-color: #38a169; }
+  .stat-card.inprogress { border-color: #d69e2e; }
+  .stat-card.notstarted { border-color: #e53e3e; }
+  .stat-card .num   { font-size: 28px; font-weight: 700; }
+  .stat-card .label { font-size: 11px; color: #718096; margin-top: 2px; }
+
+  .table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #2d3748; color: white; }
+  thead th { padding: 12px 14px; font-size: 12px; font-weight: 600; text-align: center; letter-spacing: 0.04em; }
+  thead th:nth-child(2) { text-align: left; }
+  tbody tr { border-bottom: 1px solid #e2e8f0; transition: background 0.15s; cursor: pointer; }
+  tbody tr:hover { background: #ebf8ff; }
+  tbody td { padding: 12px 14px; font-size: 13px; text-align: center; }
+  tbody td:nth-child(2) { text-align: left; font-weight: 600; }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+  .badge.high { background: #fef3c7; color: #92400e; }
+  .badge.mid  { background: #dbeafe; color: #1e40af; }
+  .badge.low  { background: #f3f4f6; color: #6b7280; }
+
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; min-width: 64px; }
+  .pill.done       { background: #c6f6d5; color: #276749; }
+  .pill.approved   { background: #1a365d; color: #ffffff; }
+  .pill.inprogress { background: #fefcbf; color: #744210; }
+  .pill.notstarted { background: #fed7d7; color: #822727; }
+  .pill.empty      { background: #f7fafc; color: #a0aec0; font-weight: 400; }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: none; color: #3182ce; font-size: 13px;
+    cursor: pointer; padding: 6px 0; margin-bottom: 18px; font-family: inherit;
+  }
+  .back-btn:hover { text-decoration: underline; }
+
+  .detail-header {
+    background: white; border-radius: 10px; padding: 20px 24px;
+    margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .detail-header .product-name { font-size: 22px; font-weight: 700; }
+  .detail-header .owner { font-size: 13px; color: #718096; margin-top: 4px; }
+
+  .section-title {
+    font-size: 13px; font-weight: 700; color: #4a5568;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    margin: 24px 0 12px;
+  }
+
+  .task-cards { display: flex; flex-direction: column; gap: 12px; }
+  .task-card {
+    background: white; border-radius: 10px; padding: 18px 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-left: 5px solid #e2e8f0;
+  }
+  .task-card.approved   { border-left-color: #1a365d; }
+  .task-card.done       { border-left-color: #38a169; }
+  .task-card.inprogress { border-left-color: #d69e2e; }
+  .task-card.notstarted { border-left-color: #e53e3e; }
+  .task-card .task-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .task-fields { display: grid; grid-template-columns: 160px 1fr; gap: 12px; }
+
+  /* Review log */
+  .review-section {
+    background: white; border-radius: 10px; padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .review-section .sec-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  }
+  .review-section .sec-head h3 { font-size: 15px; font-weight: 700; }
+
+  .add-review-btn {
+    background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8;
+    border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .add-review-btn:hover { background: #bee3f8; }
+
+  .review-log { display: flex; flex-direction: column; gap: 12px; }
+  .review-entry {
+    border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px;
+    background: #fafafa; position: relative;
+  }
+  .review-entry .entry-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  }
+  .round-badge {
+    background: #1a365d; color: white; border-radius: 50%;
+    width: 24px; height: 24px; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .delete-entry {
+    margin-left: auto; background: none; border: none; color: #cbd5e0;
+    cursor: pointer; font-size: 16px; line-height: 1;
+  }
+  .delete-entry:hover { color: #e53e3e; }
+  .entry-fields { display: grid; grid-template-columns: 140px 1fr 1fr; gap: 10px; }
+  .entry-fields.with-memo { grid-template-columns: 140px 1fr 1fr 1fr; }
+
+  .checkboxes { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; padding-top: 4px; }
+  .checkboxes label { font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+  .result-pill {
+    display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700;
+  }
+  .result-pill.approved { background: #c6f6d5; color: #276749; }
+  .result-pill.revision { background: #fefcbf; color: #744210; }
+  .result-pill.ongoing  { background: #e9d8fd; color: #553c9a; }
+
+  select, input[type="text"], input[type="date"], textarea {
+    width: 100%; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 7px 10px; font-size: 13px; font-family: inherit;
+    background: #f7fafc; color: #1a202c; transition: border 0.15s, background 0.15s;
+  }
+  select:focus, input:focus, textarea:focus {
+    outline: none; border-color: #3182ce; background: white;
+  }
+
+  .field label { font-size: 11px; color: #718096; display: block; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .save-btn {
+    margin-top: 20px; background: #1a365d; color: white; border: none;
+    border-radius: 7px; padding: 10px 28px; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: background 0.15s;
+  }
+  .save-btn:hover { background: #2c5282; }
+  .save-msg { display: inline-block; margin-left: 12px; font-size: 12px; color: #38a169; opacity: 0; transition: opacity 0.3s; }
+  .save-msg.show { opacity: 1; }
+
+  .empty-log { text-align: center; padding: 20px; color: #a0aec0; font-size: 13px; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Add product modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 12px; padding: 28px;
+    width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  }
+  .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+  .modal .field { margin-bottom: 14px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn-cancel {
+    background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 8px 18px; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .btn-cancel:hover { background: #edf2f7; }
+  .btn-add {
+    background: #1a365d; color: white; border: none; border-radius: 6px;
+    padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn-add:hover { background: #2c5282; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="h1"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="vertical-align:-4px;margin-right:8px;">
+  <!-- folder body -->
+  <path d="M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="white" opacity="0.9"/>
+  <!-- eyes -->
+  <circle cx="9.5" cy="13" r="1.1" fill="#1a365d"/>
+  <circle cx="14.5" cy="13" r="1.1" fill="#1a365d"/>
+  <!-- smile -->
+  <path d="M9.5 16 Q12 18 14.5 16" stroke="#1a365d" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+</svg>事業計画 進捗管理</div>
+    <div class="subtitle">プロダクト別タスク・レビュー状況</div>
+  </div>
+  <div id="last-updated" style="font-size:11px;opacity:0.6;"></div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h3>プロダクトを追加</h3>
+    <div class="field">
+      <label>プロダクト名</label>
+      <input type="text" id="new-name" placeholder="例：新サービス">
+    </div>
+    <div class="field">
+      <label>担当者</label>
+      <input type="text" id="new-owner" placeholder="例：山本">
+    </div>
+    <div class="field">
+      <label>優先度</label>
+      <select id="new-priority">
+        <option value="high">高</option>
+        <option value="mid" selected>中</option>
+        <option value="low">低</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-add" onclick="addProduct()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Page -->
+<div id="page-summary" class="page active">
+  <div class="main">
+    <div class="stats" id="stats"></div>
+    <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+      <button class="add-review-btn" onclick="openModal()">＋ プロダクトを追加</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>優先度</th>
+            <th>プロダクト</th>
+            <th>担当</th>
+            <th>事業計画</th>
+            <th>ロードマップ</th>
+            <th>人員計画</th>
+            <th>直近レビュー結果</th>
+            <th>次回レビュー</th>
+          </tr>
+        </thead>
+        <tbody id="summary-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Page -->
+<div id="page-detail" class="page">
+  <div class="main">
+    <button class="back-btn" onclick="showSummary()">← 一覧に戻る</button>
+    <div class="detail-header">
+      <div style="flex:1;">
+        <div class="product-name" id="detail-name"></div>
+        <div style="display:flex;gap:12px;margin-top:8px;align-items:center;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#718096;font-weight:600;">担当</span>
+            <input type="text" id="edit-owner" style="width:100px;padding:4px 8px;font-size:13px;">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#718096;font-weight:600;">優先度</span>
+            <select id="edit-priority" style="width:80px;padding:4px 8px;font-size:13px;">
+              <option value="high">高</option>
+              <option value="mid">中</option>
+              <option value="low">低</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#718096;font-weight:600;">承認期限</span>
+            <input type="date" id="edit-deadline" style="width:140px;padding:4px 8px;font-size:13px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">タスク状況</div>
+    <div class="task-cards" id="task-cards"></div>
+
+    <div class="section-title">レビュー履歴</div>
+    <div class="review-section">
+      <div class="sec-head">
+        <h3>レビューログ</h3>
+        <button class="add-review-btn" onclick="addReviewEntry()">＋ レビューを追加</button>
+      </div>
+      <div class="review-log" id="review-log"></div>
+    </div>
+
+    <div>
+      <button class="save-btn" onclick="saveDetail()">保存</button>
+      <span class="save-msg" id="save-msg">保存しました ✓</span>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+const PRODUCTS = [
+  { id: "chargeback", name: "チャージバック",        owner: "富岡",        priority: "high" },
+  { id: "direct",     name: "ダイレクト決済",       owner: "陸",         priority: "high" },
+  { id: "vg_system",  name: "valuegift発券システム", owner: "渡邊",        priority: "high" },
+  { id: "premiq",     name: "Premiq",              owner: "山本",        priority: "high" },
+  { id: "gaihan",     name: "外販",                owner: "未定",        priority: "high" },
+  { id: "lunchke",    name: "ランチケ",             owner: "小川",        priority: "high" },
+  { id: "id",         name: "iD",                 owner: "小川",        priority: "mid"  },
+  { id: "furumachi",  name: "ふるまちPay",           owner: "陸",         priority: "mid"  },
+  { id: "osaifu",     name: "おさいふPay",           owner: "佐藤",        priority: "low"  },
+];
+
+const TASKS = [
+  { key: "plan",      label: "事業計画（数字）" },
+  { key: "roadmap",   label: "ロードマップ"     },
+  { key: "headcount", label: "人員計画"         },
+];
+
+const INIT_DONE = ["direct", "lunchke", "chargeback", "id"];
+
+function defaultData() {
+  const d = {};
+  PRODUCTS.forEach(p => {
+    d[p.id] = { tasks: {}, reviews: [] };
+    TASKS.forEach(t => {
+      d[p.id].tasks[t.key] = {
+        status: INIT_DONE.includes(p.id) && t.key === "plan" ? "done" : "notstarted",
+        note: ""
+      };
+    });
+  });
+  return d;
+}
+
+function loadData() {
+  const raw = localStorage.getItem("biz_plan_v2");
+  if (!raw) return defaultData();
+  try { return JSON.parse(raw); } catch { return defaultData(); }
+}
+
+function saveData(d) {
+  localStorage.setItem("biz_plan_v2", JSON.stringify(d));
+  localStorage.setItem("biz_plan_updated", new Date().toLocaleString("ja-JP"));
+}
+
+// 保存済みPRODUCTSがあれば復元（担当・優先度・追加プロダクト）
+(function() {
+  const saved = localStorage.getItem("biz_plan_products");
+  if (!saved) return;
+  try {
+    const savedProducts = JSON.parse(saved);
+    savedProducts.forEach(sp => {
+      const idx = PRODUCTS.findIndex(p => p.id === sp.id);
+      if (idx !== -1) {
+        PRODUCTS[idx].owner    = sp.owner;
+        PRODUCTS[idx].priority = sp.priority;
+      } else {
+        PRODUCTS.push(sp);
+      }
+    });
+  } catch {}
+})();
+
+let data = loadData();
+let currentProduct = null;
+
+function pillHtml(status) {
+  const map = { approved: ["承認済", "approved"], done: ["完成", "done"], inprogress: ["作成中", "inprogress"], notstarted: ["未着手", "notstarted"] };
+  const [label, cls] = map[status] || ["ー", "empty"];
+  return `<span class="pill ${cls}">${label}</span>`;
+}
+
+function badgeHtml(priority) {
+  const map = { high: ["高", "high"], mid: ["中", "mid"], low: ["低", "low"] };
+  const [label, cls] = map[priority];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function resultPillHtml(result) {
+  const map = { approved: ["承認", "approved"], revision: ["要修正", "revision"], ongoing: ["継続", "ongoing"] };
+  const [label, cls] = map[result] || ["ー", ""];
+  return cls ? `<span class="result-pill ${cls}">${label}</span>` : "ー";
+}
+
+function renderStats() {
+  let total = 0, done = 0, inp = 0, ns = 0;
+  PRODUCTS.forEach(p => TASKS.forEach(t => {
+    total++;
+    const s = data[p.id]?.tasks?.[t.key]?.status || "notstarted";
+    if (s === "done") done++; else if (s === "inprogress") inp++; else ns++;
+  }));
+  document.getElementById("stats").innerHTML = `
+    <div class="stat-card total"><div class="num">${total}</div><div class="label">総タスク数</div></div>
+    <div class="stat-card done"><div class="num">${done}</div><div class="label">完成</div></div>
+    <div class="stat-card inprogress"><div class="num">${inp}</div><div class="label">作成中</div></div>
+    <div class="stat-card notstarted"><div class="num">${ns}</div><div class="label">未着手</div></div>`;
+}
+
+function renderSummary() {
+  renderStats();
+  const tbody = document.getElementById("summary-body");
+  tbody.innerHTML = PRODUCTS.map(p => {
+    const d = data[p.id] || {};
+    const tasks = d.tasks || {};
+    const reviews = d.reviews || [];
+    // 次回レビュー = 未来の予定日の中で最も早いもの
+    const today = new Date().toISOString().slice(0, 10);
+    const upcoming = reviews.filter(r => r.date && r.date >= today && r.result === "scheduled")
+                            .sort((a, b) => a.date.localeCompare(b.date));
+    const nextReview = upcoming.length ? upcoming[0].date : "ー";
+    const done = reviews.filter(r => r.result !== "scheduled");
+    const lastResult = done.length ? done[done.length - 1].result : null;
+    const resultMap = { approved: ["✅ 承認", "#276749"], revision: ["✏️ 要修正", "#744210"], ongoing: ["🔄 継続", "#553c9a"] };
+    const lastResultHtml = lastResult ? `<span style="font-size:12px;font-weight:600;color:${resultMap[lastResult][1]}">${resultMap[lastResult][0]}</span>` : "ー";
+    const deadline = d.deadline || "";
+    const deadlineHtml = deadline
+      ? `<span style="font-size:12px;font-weight:600;color:${deadline < today ? "#e53e3e" : deadline <= new Date(Date.now()+14*86400000).toISOString().slice(0,10) ? "#d69e2e" : "#4a5568"}">${deadline}</span>`
+      : "ー";
+    return `<tr onclick="showDetail('${p.id}')">
+      <td>${badgeHtml(p.priority)}</td>
+      <td>${p.name}</td>
+      <td>${p.owner}</td>
+      ${TASKS.map(t => `<td>${pillHtml(tasks[t.key]?.status || "notstarted")}</td>`).join("")}
+      <td>${lastResultHtml}</td>
+      <td style="font-size:12px;color:#4a5568;">${nextReview}</td>
+    </tr>`;
+  }).join("");
+  const updated = localStorage.getItem("biz_plan_updated");
+  if (updated) document.getElementById("last-updated").textContent = "最終更新: " + updated;
+}
+
+function showDetail(productId) {
+  currentProduct = PRODUCTS.find(p => p.id === productId);
+  const d = data[productId] || { tasks: {}, reviews: [] };
+
+  document.getElementById("detail-name").textContent = currentProduct.name;
+  document.getElementById("edit-owner").value = currentProduct.owner;
+  document.getElementById("edit-priority").value = currentProduct.priority;
+  document.getElementById("edit-deadline").value = d.deadline || "";
+
+  // Task cards
+  const container = document.getElementById("task-cards");
+  container.innerHTML = TASKS.map(t => {
+    const task = d.tasks?.[t.key] || {};
+    const status = task.status || "notstarted";
+    return `
+    <div class="task-card ${status}" id="card-${t.key}">
+      <div class="task-title">${t.label}</div>
+      <div class="task-fields">
+        <div class="field">
+          <label>ステータス</label>
+          <select id="status-${t.key}" onchange="updateCardStyle('${t.key}')">
+            <option value="notstarted" ${status==="notstarted"?"selected":""}>❌ 未着手</option>
+            <option value="inprogress" ${status==="inprogress"?"selected":""}>🔄 作成中</option>
+            <option value="done"       ${status==="done"?"selected":""}>✅ 完成</option>
+            <option value="approved"   ${status==="approved"?"selected":""}>🏆 承認済</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>メモ</label>
+          <input type="text" id="note-${t.key}" value="${escHtml(task.note || "")}" placeholder="備考など">
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Review log
+  renderReviewLog(d.reviews || []);
+
+  document.getElementById("page-summary").classList.remove("active");
+  document.getElementById("page-detail").classList.add("active");
+}
+
+function renderReviewLog(reviews) {
+  const container = document.getElementById("review-log");
+  if (reviews.length === 0) {
+    container.innerHTML = `<div class="empty-log">レビュー履歴はまだありません</div>`;
+    return;
+  }
+  container.innerHTML = reviews.map((r, i) => `
+    <div class="review-entry" id="entry-${i}">
+      <div class="entry-head">
+        <div class="round-badge">${i + 1}</div>
+        <strong style="font-size:13px;">第${i + 1}回レビュー</strong>
+        <button class="delete-entry" onclick="deleteReviewEntry(${i})" title="削除">×</button>
+      </div>
+      <div class="entry-fields">
+        <div class="field">
+          <label>日付</label>
+          <input type="date" id="r-date-${i}" value="${r.date || ""}">
+        </div>
+        <div class="field">
+          <label>対象タスク</label>
+          <div class="checkboxes">
+            <label><input type="checkbox" id="r-plan-${i}" ${r.targets?.includes("plan")?"checked":""}> 事業計画</label>
+            <label><input type="checkbox" id="r-roadmap-${i}" ${r.targets?.includes("roadmap")?"checked":""}> ロードマップ</label>
+            <label><input type="checkbox" id="r-headcount-${i}" ${r.targets?.includes("headcount")?"checked":""}> 人員計画</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>結果</label>
+          <select id="r-result-${i}">
+            <option value="scheduled" ${r.result==="scheduled"?"selected":""}>📅 予定</option>
+            <option value="ongoing"   ${r.result==="ongoing"?"selected":""}>🔄 継続</option>
+            <option value="revision"  ${r.result==="revision"?"selected":""}>✏️ 要修正</option>
+            <option value="approved"  ${r.result==="approved"?"selected":""}>✅ 承認</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>メモ</label>
+        <input type="text" id="r-memo-${i}" value="${escHtml(r.memo || "")}" placeholder="議事録・指摘事項など">
+      </div>
+    </div>`).join("");
+}
+
+function addReviewEntry() {
+  const pid = currentProduct.id;
+  if (!data[pid].reviews) data[pid].reviews = [];
+  data[pid].reviews.push({ date: "", targets: ["plan", "roadmap", "headcount"], result: "scheduled", memo: "" });
+  renderReviewLog(data[pid].reviews);
+}
+
+function deleteReviewEntry(idx) {
+  if (!confirm(`第${idx+1}回レビューを削除しますか？`)) return;
+  data[currentProduct.id].reviews.splice(idx, 1);
+  renderReviewLog(data[currentProduct.id].reviews);
+}
+
+function collectReviews() {
+  const reviews = [];
+  const entries = document.querySelectorAll(".review-entry");
+  entries.forEach((_, i) => {
+    const targets = [];
+    if (document.getElementById(`r-plan-${i}`)?.checked) targets.push("plan");
+    if (document.getElementById(`r-roadmap-${i}`)?.checked) targets.push("roadmap");
+    if (document.getElementById(`r-headcount-${i}`)?.checked) targets.push("headcount");
+    reviews.push({
+      date:    document.getElementById(`r-date-${i}`)?.value || "",
+      targets,
+      result:  document.getElementById(`r-result-${i}`)?.value || "scheduled",
+      memo:    document.getElementById(`r-memo-${i}`)?.value || "",
+    });
+  });
+  return reviews;
+}
+
+function updateCardStyle(taskKey) {
+  const val = document.getElementById("status-" + taskKey).value;
+  document.getElementById("card-" + taskKey).className = "task-card " + val;
+}
+
+function saveDetail() {
+  const pid = currentProduct.id;
+  if (!data[pid]) data[pid] = { tasks: {}, reviews: [] };
+
+  // 担当・優先度・承認期限の更新
+  const newOwner    = document.getElementById("edit-owner").value.trim();
+  const newPriority = document.getElementById("edit-priority").value;
+  const newDeadline = document.getElementById("edit-deadline").value;
+  const idx = PRODUCTS.findIndex(p => p.id === pid);
+  if (idx !== -1) {
+    PRODUCTS[idx].owner    = newOwner    || PRODUCTS[idx].owner;
+    PRODUCTS[idx].priority = newPriority || PRODUCTS[idx].priority;
+    currentProduct = PRODUCTS[idx];
+  }
+  data[pid].deadline = newDeadline;
+
+  TASKS.forEach(t => {
+    data[pid].tasks[t.key] = {
+      status: document.getElementById("status-" + t.key).value,
+      note:   document.getElementById("note-" + t.key).value,
+    };
+  });
+  data[pid].reviews = collectReviews();
+
+  // PRODUCTS の変更もlocalStorageに保存
+  localStorage.setItem("biz_plan_products", JSON.stringify(PRODUCTS));
+  saveData(data);
+
+  const msg = document.getElementById("save-msg");
+  msg.classList.add("show");
+  setTimeout(() => msg.classList.remove("show"), 2000);
+}
+
+// プロダクト追加モーダル
+function openModal() {
+  document.getElementById("new-name").value = "";
+  document.getElementById("new-owner").value = "";
+  document.getElementById("new-priority").value = "mid";
+  document.getElementById("modal-overlay").classList.add("open");
+  setTimeout(() => document.getElementById("new-name").focus(), 50);
+}
+function closeModal() {
+  document.getElementById("modal-overlay").classList.remove("open");
+}
+function closeModalOutside(e) {
+  if (e.target === document.getElementById("modal-overlay")) closeModal();
+}
+function addProduct() {
+  const name = document.getElementById("new-name").value.trim();
+  const owner = document.getElementById("new-owner").value.trim() || "未定";
+  const priority = document.getElementById("new-priority").value;
+  if (!name) { document.getElementById("new-name").focus(); return; }
+  const id = "custom_" + Date.now();
+  PRODUCTS.push({ id, name, owner, priority });
+  data[id] = { tasks: {}, reviews: [] };
+  TASKS.forEach(t => { data[id].tasks[t.key] = { status: "notstarted", note: "" }; });
+  localStorage.setItem("biz_plan_products", JSON.stringify(PRODUCTS));
+  saveData(data);
+  closeModal();
+  renderSummary();
+}
+
+function showSummary() {
+  renderSummary();
+  document.getElementById("page-detail").classList.remove("active");
+  document.getElementById("page-summary").classList.add("active");
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ── Firebase Realtime Database ──────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAHHmlv66TkU9e-6KSBjgi4-Jymn-O6wPU",
+  authDomain: "member-manager-4d949.firebaseapp.com",
+  databaseURL: "https://member-manager-4d949-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "member-manager-4d949",
+  storageBucket: "member-manager-4d949.firebasestorage.app",
+  messagingSenderId: "830753379430",
+  appId: "1:830753379430:web:36977f4ae84bddad1f89a7"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+const dbRef = ref(db, "biz_plan");
+
+// DBからデータをリアルタイムで受信
+onValue(dbRef, (snapshot) => {
+  const val = snapshot.val();
+  if (!val) return;
+  // productsの復元
+  if (val.products) {
+    val.products.forEach(sp => {
+      const idx = PRODUCTS.findIndex(p => p.id === sp.id);
+      if (idx !== -1) { PRODUCTS[idx].owner = sp.owner; PRODUCTS[idx].priority = sp.priority; }
+      else PRODUCTS.push(sp);
+    });
+  }
+  if (val.data) {
+    Object.assign(data, val.data);
+  }
+  renderSummary();
+  if (currentProduct) renderReviewLog(data[currentProduct.id]?.reviews || []);
+});
+
+// saveDataをFirebaseに書き込むよう上書き
+function saveToFirebase() {
+  set(dbRef, {
+    products: PRODUCTS,
+    data: data,
+    updated: new Date().toLocaleString("ja-JP")
+  });
+}
+
+// 既存のsaveData/localStorage呼び出しをFirebaseに差し替え
+const _origSaveData = saveData;
+window.saveData = function(d) {
+  saveToFirebase();
+};
+
+renderSummary();
+</script>
+</body>
+</html>
