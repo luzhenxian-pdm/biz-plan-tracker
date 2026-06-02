@@ -54,10 +54,14 @@
 
   .back-btn {
     display: inline-flex; align-items: center; gap: 6px;
-    background: none; border: none; color: #3182ce; font-size: 13px;
-    cursor: pointer; padding: 6px 0; margin-bottom: 18px; font-family: inherit;
+    background: white; border: 1px solid #cbd5e0; color: #2d3748;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; padding: 8px 16px; margin-bottom: 18px;
+    font-family: inherit; border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: background 0.15s, box-shadow 0.15s;
   }
-  .back-btn:hover { text-decoration: underline; }
+  .back-btn:hover { background: #f7fafc; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
 
   .detail-header {
     background: white; border-radius: 10px; padding: 20px 24px;
