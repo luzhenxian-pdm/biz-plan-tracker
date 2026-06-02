@@ -680,6 +680,18 @@ window.saveData = function(d) {
   saveToFirebase();
 };
 
+// グローバル公開（onclick属性から呼ぶため）
+window.showDetail        = showDetail;
+window.showSummary       = showSummary;
+window.addReviewEntry    = addReviewEntry;
+window.deleteReviewEntry = deleteReviewEntry;
+window.updateCardStyle   = updateCardStyle;
+window.saveDetail        = saveDetail;
+window.openModal         = openModal;
+window.closeModal        = closeModal;
+window.closeModalOutside = closeModalOutside;
+window.addProduct        = addProduct;
+
 renderSummary();
 </script>
 </body>
